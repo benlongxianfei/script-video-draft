@@ -1,0 +1,53 @@
+{
+  "_说明": "复制为 config.json 后修改。脚本目前主要用命令行参数 + 环境变量，这个文件是集中留档/Agent 读取用。",
+
+  "agnes": {
+    "baseUrl": "https://api.agnes-ai.cn",
+    "imageModel": "agnes-image-2.1-flash",
+    "imageSize": "1312x736",
+    "videoModel": "agnes-video-2.5-flash",
+    "videoSeconds": "5",
+    "videoSize": "720P",
+    "aspectRatio": "16:9",
+    "legacyVideoModel": "agnes-video-v2.0",
+    "frames": 121,
+    "width": 1920,
+    "height": 1080,
+    "fps": 24,
+    "videoIntervalMs": 65000,
+    "pollIntervalSec": 10,
+    "timeoutSec": 900,
+    "retries": 6
+  },
+
+  "tts": {
+    "provider": "doubao",
+    "audioFormat": "mp3",
+    "sampleRate": 24000,
+    "speedRatio": 1.0,
+    "tailPadSec": 0.06,
+    "maxCharsPerCall": 500,
+    "mergeBelowChars": 4
+  },
+
+  "plan": {
+    "targetSegmentSec": 5.0,
+    "mergeBelowSec": 4.0,
+    "longSentenceSec": 12.6,
+    "minSpeedFactor": 0.4
+  },
+
+  "jianying": {
+    "draftsRoot": "F:/JianyingPro Drafts",
+    "canvas": { "width": 1920, "height": 1080, "fps": 30 },
+    "subtitle": {
+      "fontSize": 6.0,
+      "colorHex": "bdab31",
+      "strokeWidth": 5.0,
+      "posYUi": -800,
+      "letterSpacingUi": 5,
+      "lineSpacingUi": 0,
+      "maxLineWidth": 0.92
+    }
+  }
+}

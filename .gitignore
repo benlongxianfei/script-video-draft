@@ -1,0 +1,41 @@
+# 密钥与本地配置
+.env
+*.key
+*.pem
+config.json
+secrets/
+
+# 生成产物
+output/
+分镜项目-*/
+*.mp4
+*.mov
+*.wav
+*.mp3
+*.png
+*.jpg
+*.jpeg
+*.srt
+*.ass
+!examples/**/*.png
+
+# 剪映草稿
+draft_content.json
+draft_info.json
+*.tmp
+save.bak
+
+# Python / Node
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+node_modules/
+package-lock.json
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log

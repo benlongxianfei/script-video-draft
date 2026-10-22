@@ -1,0 +1,6 @@
+interface:
+  display_name: "Agnes 口播视频流水线（精简开源版）"
+  short_description: "文案 → 分镜 → Agnes 生图生视频 → 豆包配音 → 剪映三轨草稿"
+
+policy:
+  allow_implicit_invocation: true
