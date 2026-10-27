@@ -1,4 +1,4 @@
-# 文案转剪映三轨草稿 · Script2JianYing
+# 文案生视频再转剪映草稿 · Script-Video-Draft
 
 > **一篇中文文案进，一个可继续精修的剪映三轨工程出。**
 > 分镜 → 生图 → 图生视频 → 豆包配音 → 剪映草稿。**画面平台可替换**（默认 Agnes，可换可灵 / 即梦 / Runway 等），配音用豆包。
@@ -82,7 +82,7 @@ python scripts/build_draft.py \
 装进 Agent（Claude Code / WorkBuddy 等）：
 
 ```bash
-cp -r . ~/.claude/skills/agnes-bw-video-lite     # 或 ~/.workbuddy/skills/
+cp -r . ~/.claude/skills/script-video-draft     # 或 ~/.workbuddy/skills/
 ```
 
 然后直接说：**"这篇文案做成视频，出剪映草稿"**。

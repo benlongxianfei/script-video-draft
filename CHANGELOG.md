@@ -1,5 +1,13 @@
 # Changelog
 
+## v2.1.0 (2026-10-27)
+
+**改名（仅名称，无接口变更）**：
+
+- 中文名：文案转剪映三轨草稿 → **文案生视频再转剪映草稿**
+- 英文名 / 仓库名：`script2jianying` → **`script-video-draft`**（旧地址 301 跳转）
+- 技能 `name`：`script-video-draft`；`display_name_en`：Script-Video-Draft
+
 ## v2.0.0 (2026-10-27)
 
 **改名 + 平台解耦**（不兼容旧命令，仓库名同时变更）：

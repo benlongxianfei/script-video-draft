@@ -1,14 +1,14 @@
 ---
-name: script2jianying
+name: script-video-draft
 description: "把中文口播文案做成剪映三轨草稿：分镜 → 生图 → 图生视频 → 豆包配音 → 三轨对齐。画面平台可替换（默认 Agnes 适配器）。"
 description_zh: "文案 → 剪映三轨草稿（视频/音频/字幕独立片段，句级对齐）；画面平台可换"
 description_en: "Script to JianYing 3-track draft (storyboard + AI image/video + TTS), pluggable video provider"
-version: 2.0.0
-display_name: "文案转剪映三轨草稿"
-display_name_en: "Script2JianYing"
+version: 2.1.0
+display_name: "文案生视频再转剪映草稿"
+display_name_en: "Script-Video-Draft"
 ---
 
-# 文案转剪映三轨草稿（Script2JianYing）
+# 文案生视频再转剪映草稿（Script-Video-Draft）
 
 输入一篇中文口播文案，输出**剪映三轨草稿**（视频轨 / 音频轨 / 字幕轨各自独立片段，句级对齐）。
 

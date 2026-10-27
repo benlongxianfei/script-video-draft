@@ -1,4 +1,4 @@
-# Script2JianYing — Script → JianYing 3-track draft
+# Script-Video-Draft — 文案 → AI video → JianYing 3-track draft
 
 > **One Chinese script in, one editable JianYing (CapCut CN) 3-track project out.**
 > Storyboard → AI image/video generation → Doubao TTS → JianYing draft.
@@ -46,7 +46,7 @@ python scripts/build_draft.py --shots ./output/demo \
 Install as an agent skill:
 
 ```bash
-cp -r . ~/.claude/skills/script2jianying      # or ~/.workbuddy/skills/
+cp -r . ~/.claude/skills/script-video-draft      # or ~/.workbuddy/skills/
 ```
 
 Then just say: *"turn this script into a video with a JianYing draft"*.

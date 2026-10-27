@@ -1,5 +1,5 @@
 interface:
-  display_name: "文案转剪映三轨草稿"
+  display_name: "文案生视频再转剪映草稿"
   short_description: "文案 → 分镜 → 生图/图生视频（平台可换）→ 豆包配音 → 剪映三轨草稿"
 
 policy:
