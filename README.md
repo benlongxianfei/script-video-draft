@@ -34,6 +34,13 @@
 
 ## 快速开始
 
+### 0) 装进来
+
+```bash
+git clone https://github.com/benlongxianfei/script-video-draft.git
+cd script-video-draft
+```
+
 ### 1) 依赖
 
 ```bash
