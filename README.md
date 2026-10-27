@@ -193,6 +193,17 @@ cp -r . ~/.claude/skills/script-video-draft     # 或 ~/.workbuddy/skills/
 
 **剪映版本兼容吗？** 只保证 `pyJianYingDraft` 能写出的草稿结构；剪映 6+ 对已保存草稿会加密，本项目不读取加密草稿。
 
+## 参与共建
+
+| 想做什么 | 去哪 |
+|---|---|
+| 报 bug（有表单，填完就能定位） | [Issues](https://github.com/benlongxianfei/script-video-draft/issues/new/choose) |
+| 聊用法 / 晒成片 / 求诊断 | [Discussions](https://github.com/benlongxianfei/script-video-draft/discussions) |
+| **接入新平台**（可灵 / 即梦 / Runway …） | 复制 `scripts/providers/template.mjs` → 开 PR，见 [CONTRIBUTING.md](./CONTRIBUTING.md) |
+| 安全问题 / 密钥泄露 | [SECURITY.md](./SECURITY.md)（走私有的漏洞报告，别开公开 issue） |
+
+CI 会自动跑语法检查、配置校验、分镜包 dry-run 和密钥扫描；PR 模板里有自测清单。
+
 ## 合规与免责（请先读）
 
 **性质**

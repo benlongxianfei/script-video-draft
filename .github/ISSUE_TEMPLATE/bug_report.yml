@@ -1,0 +1,69 @@
+name: Bug 报告
+description: 跑不通、报错、生成结果不对 —— 请按这个填，能大幅提高修复速度
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提交前请确认：
+        1. 已看 `docs/pitfalls.md`（常见错误基本都在里面）
+        2. 已看 `docs/providers.md`（换平台后的配置问题多半在这里）
+        3. **不要贴 API Key**，需要贴就贴前 6 位 + `***`
+  - type: input
+    id: version
+    attributes:
+      label: 版本
+      description: Release 标签或 commit sha
+      placeholder: "v2.1.0 / 56d3dbc"
+    validations:
+      required: true
+  - type: dropdown
+    id: provider
+    attributes:
+      label: 画面平台
+      options:
+        - agnes（默认）
+        - 自建适配器（请在下文写平台名）
+        - 只用了配音/草稿部分
+    validations:
+      required: true
+  - type: dropdown
+    id: stage
+    attributes:
+      label: 卡在哪一步
+      options:
+        - ① 分镜包解析
+        - ② 生图
+        - ③ 图生视频
+        - ④ 豆包配音
+        - ⑤ 剪映草稿构建
+        - 其它
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: 现象
+      description: 期望发生什么 / 实际发生了什么
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: 完整报错或日志
+      description: 贴命令 + 输出（记得脱敏）。503/429 之类请说明是哪个平台、什么时间
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: 环境
+      placeholder: |
+        OS: Windows 11
+        Node: 20.x / Python: 3.11
+        ffmpeg: 6.x
+        剪映版本: 6.x
+    validations:
+      required: true

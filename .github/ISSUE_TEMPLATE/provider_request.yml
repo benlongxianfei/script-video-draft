@@ -1,0 +1,49 @@
+name: 新增平台适配器
+description: 想接入可灵 / 即梦 / Runway / Vidu / 自建服务 —— 用这个模板认领
+title: "[provider] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        先看 `docs/providers.md`（契约 + 换平台四步 + 字段对照）。
+        如果你已经写好适配器，直接开 PR 更快，不用先开 issue。
+  - type: input
+    id: platform
+    attributes:
+      label: 平台名
+      placeholder: "可灵 / 即梦 / Runway / Vidu / 自建 …"
+    validations:
+      required: true
+  - type: input
+    id: docs
+    attributes:
+      label: 官方 API 文档链接
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: 你打算支持哪些能力
+      multiple: true
+      options:
+        - 文生图
+        - 图生视频（单图起帧）
+        - 首尾帧
+        - 视频查询/轮询
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: 特殊之处
+      description: 比如时长只能取 5/10 秒、只支持 16:9、必须走回调、有并发限制、需要代理
+  - type: checkboxes
+    id: ack
+    attributes:
+      label: 确认
+      options:
+        - label: 我不会把 API Key 写进代码或 README
+          required: true
+        - label: 适配器会走 `console.error` 打日志、stdout 只输出结果 JSON
+          required: true

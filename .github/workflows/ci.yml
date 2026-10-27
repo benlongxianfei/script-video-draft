@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Node 语法检查
+        run: |
+          for f in $(find scripts -name "*.mjs"); do
+            echo "check $f"
+            node --check "$f"
+          done
+
+      - name: Python 语法检查
+        run: |
+          python -m py_compile scripts/*.py
+          pip install --quiet pyJianYingDraft
+          python -c "import pyJianYingDraft; print('pyJianYingDraft ok')"
+
+      - name: 配置样例合法性
+        run: python -c "import json;json.load(open('config.example.json',encoding='utf-8'));print('config ok')"
+
+      - name: 分镜包解析（dry-run，不调用 API）
+        run: node scripts/batch_generate.mjs --package examples/storyboard-package.example.md --out /tmp/demo --dry-run
+
+      - name: 适配器可加载
+        run: node scripts/provider.mjs ls
+
+      - name: 密钥泄漏检查
+        run: |
+          if grep -rInE "sk-[A-Za-z0-9]{20,}" --include="*.mjs" --include="*.py" --include="*.json" . | grep -v "example"; then
+            echo "::error::疑似密钥被提交"; exit 1
+          fi
+          echo "no secret found"

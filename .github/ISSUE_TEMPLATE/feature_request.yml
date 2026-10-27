@@ -1,0 +1,27 @@
+name: 功能建议
+description: 想要新能力 / 改流程 —— 先说清使用场景
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: scenario
+    attributes:
+      label: 你实际在做什么
+      description: 描述真实使用场景，比"希望支持 X"有用得多
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 你希望它怎么工作
+  - type: textarea
+    id: alternative
+    attributes:
+      label: 你现在是怎么绕过的
+  - type: checkboxes
+    id: boundary
+    attributes:
+      label: 边界确认
+      options:
+        - label: 这个功能不会破坏"三轨独立片段 + 句级对齐"的既有规则
+          required: false

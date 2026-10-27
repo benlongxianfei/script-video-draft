@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 求诊断 / 讨论用法
+    url: https://github.com/benlongxianfei/script-video-draft/discussions
+    about: 不确定是不是 bug、想聊用法或晒成片，去 Discussions，别开 issue
+  - name: 常见报错速查
+    url: https://github.com/benlongxianfei/script-video-draft/blob/main/docs/pitfalls.md
+    about: 429 / 503 / 字幕拆词 / 画面重复 —— 先看这张表
+  - name: 换平台（可灵 / 即梦 / Runway …）
+    url: https://github.com/benlongxianfei/script-video-draft/blob/main/docs/providers.md
+    about: 适配器契约 + 换平台四步 + 字段对照
