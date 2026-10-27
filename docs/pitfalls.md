@@ -6,12 +6,12 @@
 > 免费档视频用**共享渲染队列**：饱和时请求在入队前被拒 —— 180ms 级返回、无 `video_id`、**不扣视频额度**。
 > 同一刻生图正常、付费模型报的是 `403` 余额不足、中国站与国际站同时报满 → 属于平台容量，不是你的配置。
 > 对策：错峰（深夜/清晨）、延长退避（默认 20 轮 ≈12 分钟，`AGNES_QUEUE_RETRY` 可调）、缩短 `seconds`、换模型池。
-> 完整证据链见 `agnes-api-cn.md` 同名章节。
+> 完整证据链见 `provider-agnes.md` 同名章节。
 
 | 现象 | 真因 | 处理 |
 |---|---|---|
 | `403 insufficient_user_quota` | 用了付费模型（如 `agnes-video-2.5`） | 换 `agnes-video-2.5-flash` / 充值 |
-| `404 model_not_found：当前分组不支持模型` | 模型已下架（如 `agnes-video-v2.0`） | 换当前免费模型，见 `docs/agnes-api-cn.md` |
+| `404 model_not_found：当前分组不支持模型` | 模型已下架（如 `agnes-video-v2.0`） | 换当前免费模型，见 `docs/provider-agnes.md` |
 | `429 video generation rate limit exceeded: allows 1 requests per 1 minute(s)` | 账号级视频限速 | 相邻提交 ≥65s；429 读 `Retry-After`，没有就等 70s |
 | `429 video status query rate limit exceeded` | 查询也有独立限流 | 轮询间隔 10s（别用 5s） |
 | `400 num_frames ... must be 8n+1` | 帧数不合规 | 65 / 121 / 241 |

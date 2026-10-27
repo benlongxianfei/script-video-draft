@@ -1,18 +1,18 @@
 ---
-name: agnes-bw-video-lite
-description: "把中文口播文案做成短视频：分镜 → Agnes 生图 → 图生视频 → 豆包配音 → 剪映三轨草稿。开源精简版，只用 Agnes 中国站单站点、豆包 TTS。"
-description_zh: "文案到剪映三轨草稿的完整流水线（开源精简版：Agnes 中国站 + 豆包配音）"
-description_en: "Script to JianYing 3-track draft: Agnes (CN) images/videos + Doubao TTS"
-version: 1.1.1
-display_name: "Agnes 口播视频流水线（精简开源版）"
-display_name_en: "Agnes Voice-over Video Pipeline (Lite)"
+name: script2jianying
+description: "把中文口播文案做成剪映三轨草稿：分镜 → 生图 → 图生视频 → 豆包配音 → 三轨对齐。画面平台可替换（默认 Agnes 适配器）。"
+description_zh: "文案 → 剪映三轨草稿（视频/音频/字幕独立片段，句级对齐）；画面平台可换"
+description_en: "Script to JianYing 3-track draft (storyboard + AI image/video + TTS), pluggable video provider"
+version: 2.0.0
+display_name: "文案转剪映三轨草稿"
+display_name_en: "Script2JianYing"
 ---
 
-# Agnes 口播视频流水线（精简开源版）
+# 文案转剪映三轨草稿（Script2JianYing）
 
 输入一篇中文口播文案，输出**剪映三轨草稿**（视频轨 / 音频轨 / 字幕轨各自独立片段，句级对齐）。
 
-- 生图生视频：只走 **Agnes 中国站**（`api.agnes-ai.cn`，直连，无需代理）
+- 画面：**平台可替换**。默认适配器 `agnes`（中国站），换平台只改 `scripts/providers/*.mjs`，见 `docs/providers.md`
 - 配音：**豆包 TTS**（火山引擎 openspeech v3）
 - 组装：剪映草稿（`pyJianYingDraft`）
 
@@ -24,7 +24,7 @@ display_name_en: "Agnes Voice-over Video Pipeline (Lite)"
 
 | 依赖 | 说明 | 必需 |
 |---|---|---|
-| Agnes 中国站 key | 生图 / 图生视频，`AGNES_API_KEY_CN` | ✅ |
+| 画面平台 key | 默认适配器是 Agnes 中国站（`AGNES_API_KEY_CN`）；换平台见 `docs/providers.md` | ✅ |
 | 火山引擎语音 key | `VOLC_VOICE_APP_ID` + `VOLC_VOICE_ACCESS_TOKEN` | ✅ |
 | Node 18+ | 批量生成脚本（内置 fetch） | ✅ |
 | Python 3.10+ + `pyJianYingDraft` | 草稿构建 | ✅ |
@@ -44,9 +44,8 @@ display_name_en: "Agnes Voice-over Video Pipeline (Lite)"
 ```
 文案(txt/md)
   → ①分镜：40 字 ≈ 1 镜，产出分镜包 md（## G 生图卡 / ## H 图生视频卡）
-  → ②生图：agnes_client.mjs image，模型 agnes-image-2.5-flash，默认 2K+16:9 → 2624x1472
-  → ③图生视频：agnes_client.mjs video，模型 agnes-video-2.5-flash（seconds 5 / 720P）
-              账号支持旧模型时才用 --model agnes-video-v2.0 --frames 121 出 1920x1088
+  → ②生图：scripts/provider.mjs image（默认 agnes-image-2.5-flash，2K+16:9 → 2624x1472）
+  → ③图生视频：scripts/provider.mjs video（默认 agnes-video-2.5-flash，seconds 5 / 720P）
   → ④配音：tts_doubao.py 逐句合成 → 去静音 + 60ms 尾停 → 拼合 → subtitle_timeline.json
   → ⑤草稿：build_draft.py 规划均衡段落 → 三轨独立片段 → 写回字间距/位置 → 四道校验
 ```
@@ -54,7 +53,13 @@ display_name_en: "Agnes Voice-over Video Pipeline (Lite)"
 一键跑：`node scripts/batch_generate.mjs --package 分镜包.md --out ./output/项目名`
 （图片按档位限速、视频 1 次/分钟，25 镜约 90 分钟，必须后台跑）
 
-## 免费额度与限速（2026-10 官网口径）
+## 画面平台：可替换（默认 Agnes）
+
+- 平台差异只落在 `scripts/providers/<id>.mjs` 一个文件里；上游只调 `scripts/provider.mjs image|video`
+- 换平台：复制 `providers/template.mjs` → 改两处请求 → `--provider <id>` 或 `PROVIDER=<id>`
+- 按平台的限速/尺寸/时长差异，也写在各自适配器与 `docs/providers.md` 里，**不要写进本文件**
+
+默认适配器 `agnes` 的额度与限速（2026-10 官网口径，详见 `docs/provider-agnes.md`）：
 
 | 模态 | 免费模型 | 免费档最高规格 | 实际生效 RPM |
 |---|---|---|---|

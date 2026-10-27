@@ -1,6 +1,6 @@
 {
   "_说明": "复制为 config.json 后修改。脚本目前主要用命令行参数 + 环境变量，这个文件是集中留档/Agent 读取用。",
-
+  "provider": "agnes",
   "agnes": {
     "baseUrl": "https://api.agnes-ai.cn",
     "imageModel": "agnes-image-2.5-flash",
@@ -18,7 +18,12 @@
     "fps": 24,
     "rpm": {
       "_说明": "免费档实际生效 RPM（官网 Token Plan FAQ）",
-      "image": { "1K": 10, "2K": 5, "3K": 1, "4K": 1 },
+      "image": {
+        "1K": 10,
+        "2K": 5,
+        "3K": 1,
+        "4K": 1
+      },
       "video": 1,
       "text": 10
     },
@@ -27,7 +32,6 @@
     "timeoutSec": 900,
     "retries": 6
   },
-
   "tts": {
     "provider": "doubao",
     "audioFormat": "mp3",
@@ -37,17 +41,19 @@
     "maxCharsPerCall": 500,
     "mergeBelowChars": 4
   },
-
   "plan": {
     "targetSegmentSec": 5.0,
     "mergeBelowSec": 4.0,
     "longSentenceSec": 12.6,
     "minSpeedFactor": 0.4
   },
-
   "jianying": {
     "draftsRoot": "F:/JianyingPro Drafts",
-    "canvas": { "width": 1920, "height": 1080, "fps": 30 },
+    "canvas": {
+      "width": 1920,
+      "height": 1080,
+      "fps": 30
+    },
     "subtitle": {
       "fontSize": 6.0,
       "colorHex": "bdab31",

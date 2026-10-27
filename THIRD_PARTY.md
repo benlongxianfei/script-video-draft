@@ -17,7 +17,7 @@
 
 | 服务 | 提供方 | 本仓库如何使用 |
 |---|---|---|
-| Agnes AI（中国站 `api.agnes-ai.cn` / 国际站 `apihub.agnes-ai.com`） | Sapiens AI | 生图 / 图生视频；使用者自备 API Key |
+| Agnes AI（默认画面适配器；中国站 `api.agnes-ai.cn` / 国际站 `apihub.agnes-ai.com`） | Sapiens AI | 生图 / 图生视频；使用者自备 API Key。**可替换**：换平台后本条不适用 |
 | 豆包语音合成（火山引擎 `openspeech.bytedance.com`） | 字节跳动 | 逐句 TTS；使用者自备 AppId / Access Token |
 | 剪映 / CapCut | 字节跳动 | 仅生成草稿文件，供你本地用剪映打开；不修改、不反编译客户端 |
 
@@ -43,6 +43,9 @@
 | 剪映 JSON 字段换算 | 经验值 + pyJianYingDraft 行为验证 |
 
 ## 五、商标声明
+
+本项目的代码与"分镜→三轨草稿"的方法论不依赖任何特定画面平台；仓库名与技能名**不含**任何平台商标。
+Agnes 仅作为"默认适配器"出现在代码与文档中。
 
 Agnes、Agnes AI、豆包、火山引擎、剪映、CapCut、JianYing 等名称与标识归各自权利人所有。
 本项目仅在**描述兼容对象**时使用这些名称（如"生成剪映草稿""调用 Agnes 接口"），

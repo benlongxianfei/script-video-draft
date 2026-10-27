@@ -1,8 +1,8 @@
-# Agnes Voice-over Video Pipeline (Lite)
+# Script2JianYing — Script → JianYing 3-track draft
 
 > **One Chinese script in, one editable JianYing (CapCut CN) 3-track project out.**
-> Storyboard → Agnes image/video generation → Doubao TTS → JianYing draft.
-> China-mainland Agnes endpoint only. Doubao TTS only. No dual-region scheduling.
+> Storyboard → AI image/video generation → Doubao TTS → JianYing draft.
+> **The video/image provider is pluggable** (ships with an Agnes adapter).
 
 `agent-skill` · `ai-video` · `jianying` · `capcut` · `tts` · `storyboard`
 
@@ -13,7 +13,7 @@ audio/subtitle sync, and keeping shots from repeating**. This skill encodes a hu
 judgment as rules + runnable scripts:
 
 - 40 Chinese characters ≈ 1 shot; emits a machine-parsable storyboard package
-- Batch image + image-to-video on Agnes, **resumable**, rate-limit aware
+- Batch image + image-to-video on **any** provider, **resumable**, rate-limit aware
 - Sentence-level TTS; the **real per-sentence duration** becomes the subtitle timeline
 - Assembles a JianYing project where video / audio / subtitle tracks are all **independent segments**,
   aligned per sentence, ready to tweak by hand
@@ -46,7 +46,7 @@ python scripts/build_draft.py --shots ./output/demo \
 Install as an agent skill:
 
 ```bash
-cp -r . ~/.claude/skills/agnes-bw-video-lite      # or ~/.workbuddy/skills/
+cp -r . ~/.claude/skills/script2jianying      # or ~/.workbuddy/skills/
 ```
 
 Then just say: *"turn this script into a video with a JianYing draft"*.
@@ -73,7 +73,8 @@ Limit pools are shared per key *type* — creating more free keys does not raise
 ```
 SKILL.md                 agent-facing SOP (rules, flow, checklist)
 scripts/
-  agnes_client.mjs       minimal Agnes CN client (image / video / query)
+  provider.mjs           provider entry (image / video / ls)
+  providers/             agnes.mjs (default) + template.mjs (add your own)
   batch_generate.mjs     storyboard → per-shot image + video (resume, 65s throttle)
   tts_doubao.py          sentence-level TTS + silence trim + timeline
   build_draft.py         JianYing 3-track draft + 4 alignment checks
@@ -84,7 +85,7 @@ examples/                sample script + storyboard package
 ## FAQ
 
 - **Do I need to code?** No, but you must fill in paths/keys/voice ID.
-- **Must I use Agnes?** No — replace `agnes_client.mjs` with any text-to-image / image-to-video API.
+- **Must I use Agnes?** No. Copy `scripts/providers/template.mjs` into `providers/<your-platform>.mjs`, then `--provider <id>`. Nothing else changes. See `docs/providers.md`.
 - **How long?** Hard limit 1 video request/min: ~55 min for 16 shots, ~85 min for 25 shots.
 - **Portrait?** Yes: `--width 1080 --height 1920` and adjust `--pos-y-ui`.
 

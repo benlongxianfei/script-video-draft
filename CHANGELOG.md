@@ -1,5 +1,22 @@
 # Changelog
 
+## v2.0.0 (2026-10-27)
+
+**改名 + 平台解耦**（不兼容旧命令，仓库名同时变更）：
+
+- 仓库/技能改名：`agnes-bw-video-lite` → **`script2jianying`**（中文显示名「文案转剪映三轨草稿」）。
+  名字只描述功能，不再绑定任何平台商标。
+- **新增平台适配器架构**：
+  - `scripts/provider.mjs` 统一入口（`image` / `video` / `ls`）
+  - `scripts/providers/agnes.mjs` 默认适配器（原 `agnes_client.mjs` 的能力迁过来）
+  - `scripts/providers/template.mjs` 换平台模板（可灵 / 即梦 / Runway / Vidu / 自建服务）
+  - 选平台优先级：`--provider` > `PROVIDER` > `config.json` 的 `provider` > 默认 `agnes`
+- `batch_generate.mjs` 改为调用 `provider.mjs`，新增 `--provider`；不再传 `--frames`（时长统一用 `--seconds`）
+- 新增 `docs/providers.md`：适配器契约、换平台四步、常见平台字段对照、换平台后还要改什么
+- 文档重组：`docs/agnes-api-cn.md` → `docs/provider-agnes.md`（降级为"某个适配器的实现细节"）
+
+> 旧命令 `scripts/agnes_client.mjs` 已移除；等价写法：`node scripts/provider.mjs <image|video> …`
+
 ## v1.1.1 (2026-10-27)
 
 合规补齐 + 队列满容错：

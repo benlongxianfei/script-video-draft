@@ -1,11 +1,11 @@
-# Agnes 口播视频流水线（精简开源版）
+# 文案转剪映三轨草稿 · Script2JianYing
 
 > **一篇中文文案进，一个可继续精修的剪映三轨工程出。**
-> 分镜 → Agnes 生图 → 图生视频 → 豆包配音 → 剪映草稿。只用 Agnes 中国站，只用豆包语音。
+> 分镜 → 生图 → 图生视频 → 豆包配音 → 剪映草稿。**画面平台可替换**（默认 Agnes，可换可灵 / 即梦 / Runway 等），配音用豆包。
 
 ![skill](https://img.shields.io/badge/type-agent--skill-black)
 ![tts](https://img.shields.io/badge/TTS-豆包%20%2F%20火山引擎-blue)
-![image](https://img.shields.io/badge/image%2Fvideo-Agnes%20中国站-green)
+![provider](https://img.shields.io/badge/image%2Fvideo-pluggable%20provider-green)
 ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 ---
@@ -16,7 +16,7 @@
 这个技能把这些"剪辑师的隐性判断"写成了一份 AI 可执行的操作手册 + 一组能直接跑的脚本：
 
 - 40 字切一镜，产出结构化分镜包（生图卡 + 图生视频卡）
-- 调 Agnes 批量出图、图生视频，**断点续传**、遵守限速
+- 调**任意**文生图/图生视频平台批量出素材（默认 Agnes 适配器），**断点续传**、遵守限速
 - 逐句 TTS，**用每句真实发音时长**当字幕时间轴（不靠语音识别猜）
 - 组装成剪映工程：视频轨 / 音频轨 / 字幕轨**全是独立片段**，句级对齐，打开就能逐段改
 
@@ -46,13 +46,14 @@ pip install pyJianYingDraft
 ### 2) 配置密钥
 
 ```bash
-cp .env.example .env        # 填 Agnes 中国站 key + 火山引擎语音 key
-cp config.example.json config.json   # 填剪映草稿目录等
+cp .env.example .env        # 填画面平台 key（默认 Agnes）+ 火山引擎语音 key
+cp config.example.json config.json   # 填剪映草稿目录、provider 等
 ```
 
 | 变量 | 用途 | 从哪拿 |
 |---|---|---|
-| `AGNES_API_KEY_CN` | 生图 / 图生视频 | Agnes 控制台（中国站） |
+| `PROVIDER`（可选） | 选平台，默认 `agnes` | 见 `docs/providers.md` |
+| `AGNES_API_KEY_CN` | 默认适配器的生图 / 图生视频 key | Agnes 控制台（中国站） |
 | `VOLC_VOICE_APP_ID` | 豆包配音 | 火山引擎语音合成控制台 |
 | `VOLC_VOICE_ACCESS_TOKEN` | 豆包配音 | 同上 |
 | `DOUBAO_SPEAKER`（可选） | 音色 ID | 控制台里的音色，默认预置音色 |
@@ -65,6 +66,7 @@ cp config.example.json config.json   # 填剪映草稿目录等
 
 # ② 出素材（限速 1 次/分钟，25 镜约 85 分钟，放后台）
 node scripts/batch_generate.mjs --package examples/storyboard-package.example.md --out ./output/demo
+#    换平台：加 --provider <id>，或 PROVIDER=<id>；先 `node scripts/provider.mjs ls` 看已装适配器
 
 # ③ 配音（逐句合成 + 去静音 + 时间轴）
 python scripts/tts_doubao.py --text examples/script.example.md --out ./output/demo/配音
@@ -91,8 +93,9 @@ cp -r . ~/.claude/skills/agnes-bw-video-lite     # 或 ~/.workbuddy/skills/
 
 | 脚本 | 作用 | 关键参数 |
 |---|---|---|
-| `scripts/agnes_client.mjs` | Agnes 中国站最小客户端 | `image` / `video` / `query` 三个子命令；`--model` 自动切换新旧协议 |
-| `scripts/batch_generate.mjs` | 分镜包 → 逐镜生图 + 图生视频 | `--package --out --seconds --frames --model --interval --only --dry-run` |
+| `scripts/provider.mjs` | **平台适配器入口**（画图/图生视频） | `image` / `video` / `ls`；`--provider` 切平台 |
+| `scripts/providers/agnes.mjs` | 默认适配器：Agnes 中国站 | 换平台照 `providers/template.mjs` 抄 |
+| `scripts/batch_generate.mjs` | 分镜包 → 逐镜生图 + 图生视频 | `--package --out --seconds --model --provider --interval --only --dry-run` |
 | `scripts/tts_doubao.py` | 豆包逐句配音 + 时间轴 | `--text --out --limit --speed` |
 | `scripts/build_draft.py` | 剪映三轨草稿 + 四道校验 | `--shots --timeline --audio --drafts-root --name` |
 
@@ -104,7 +107,9 @@ cp -r . ~/.claude/skills/agnes-bw-video-lite     # 或 ~/.workbuddy/skills/
 | `subtitle_timeline.json` | `{"total_duration": 123.5, "segments": [{"text","file","duration"}]}` |
 | `分镜项目/00N-镜头N/` | `image.png` + `video.mp4` + `image-result.json` + `video-result.json` |
 
-### 第三方 API（中国站，2026-10 核实）
+### 默认适配器的接口（Agnes 中国站，2026-10 核实）
+
+> 下面这些只是 `providers/agnes.mjs` 的实现细节。换成别的平台后，这一节就不适用了 —— 平台差异见 [`docs/providers.md`](./docs/providers.md)。
 
 | 项 | 值 |
 |---|---|
@@ -117,9 +122,9 @@ cp -r . ~/.claude/skills/agnes-bw-video-lite     # 或 ~/.workbuddy/skills/
 | 豆包 TTS | `POST https://openspeech.bytedance.com/api/v3/tts/unidirectional`，返回 base64 音频帧 |
 
 **为什么是这两个模型**：`/v1/models` 里图片最高版本是 `agnes-image-2.5-flash`（2.0/2.1/2.5 三档输出全免费），
-视频最高免费版本是 `agnes-video-2.5-flash`（2.5 标准版按秒计费，免费额度跑不动）。实测证据见 `docs/agnes-api-cn.md`。
+视频最高免费版本是 `agnes-video-2.5-flash`（2.5 标准版按秒计费，免费额度跑不动）。实测证据见 `docs/provider-agnes.md`。
 
-### 免费档 RPM（官网公告，2026-09-23 文本下调 50% 后）
+### 默认适配器的免费档 RPM（官网公告，2026-09-23 文本下调 50% 后）
 
 | 模态 | 规格 | 允许 | **实际生效** | 脚本对应间隔 |
 |---|---|---|---|---|
@@ -138,9 +143,15 @@ cp -r . ~/.claude/skills/agnes-bw-video-lite     # 或 ~/.workbuddy/skills/
 
 ```
 ├── SKILL.md                  技能正文（给 Agent 看的 SOP）
-├── scripts/                  4 个可运行脚本
+├── scripts/
+│   ├── provider.mjs          平台适配器入口（换平台只动这里注册的实现）
+│   ├── providers/            agnes.mjs（默认）+ template.mjs（换平台模板）
+│   ├── batch_generate.mjs    分镜包 → 批量生图/生视频
+│   ├── tts_doubao.py         豆包逐句配音 + 时间轴
+│   └── build_draft.py        剪映三轨草稿 + 四道校验
 ├── docs/
-│   ├── agnes-api-cn.md       中国站协议与限速
+│   ├── providers.md          平台适配器契约 + 换平台四步 + 字段对照
+│   ├── provider-agnes.md     默认适配器（Agnes）协议与限速
 │   ├── tts-doubao.md         豆包配音与停顿处理
 │   ├── jianying-draft.md     剪映三轨字段与换算
 │   ├── quality-check.md      防变形与抽帧验收
@@ -156,7 +167,7 @@ cp -r . ~/.claude/skills/agnes-bw-video-lite     # 或 ~/.workbuddy/skills/
 
 **要会写代码吗？** 不用写，但要会填配置（路径 / key / 音色）。
 
-**一定要用 Agnes 吗？** 主链是 Agnes，但任何"文生图 + 图生视频"接口都能替换 —— 改 `agnes_client.mjs` 一个文件即可。
+**一定要用 Agnes 吗？** 不用。画面平台是可替换的：复制 `scripts/providers/template.mjs` 改成你的平台（可灵 / 即梦 / Runway / Vidu / 自建服务），用 `--provider <id>` 切过去即可，其它脚本一行都不用改。详见 `docs/providers.md`。
 
 **要跑多久？** 视频免费档 1 次/分钟：25 镜约 85 分钟，16 镜约 55 分钟；生图 2K 档 5 RPM，25 张另加约 5 分钟。加并发只会撞 429。
 
@@ -171,14 +182,14 @@ cp -r . ~/.claude/skills/agnes-bw-video-lite     # 或 ~/.workbuddy/skills/
 **为什么视频一直报 503 队列已满？** 免费档视频跑的是**共享队列**，队列饱和时请求在"入队前"就被拒：
 未创建任务、**不扣视频额度**、180ms 内返回。同一时刻生图是正常的。这是平台容量问题，不是你的 key 或参数。
 对策：错峰（深夜/清晨）、延长重试（脚本默认 20 轮 ≈12 分钟，`AGNES_QUEUE_RETRY` 可调）、
-缩短 `seconds`、或换模型池。详细诊断见 `docs/agnes-api-cn.md`。
+缩短 `seconds`、或换模型池。详细诊断见 `docs/provider-agnes.md`。
 
 **剪映版本兼容吗？** 只保证 `pyJianYingDraft` 能写出的草稿结构；剪映 6+ 对已保存草稿会加密，本项目不读取加密草稿。
 
 ## 合规与免责（请先读）
 
 **性质**
-- **非官方项目**。与 Agnes AI（Sapiens AI）、火山引擎/字节跳动（豆包、剪映、CapCut）无隶属、合作或背书关系；名称仅用于描述"兼容/可接入"的对象。商标归各自权利人所有。
+- **非官方项目**。与 Agnes AI（Sapiens AI，默认画面适配器）、火山引擎/字节跳动（豆包、剪映、CapCut）无隶属、合作或背书关系；名称仅用于描述"兼容/可接入"的对象。商标归各自权利人所有。
 - 剪映草稿格式由第三方库 [pyJianYingDraft](https://github.com/GuanYixuan/pyJianYingDraft)（Apache-2.0）实现；本项目**不修改、不反编译、不破解**剪映客户端，也不绕过任何付费功能。
 - 详细依赖与商标说明见 [`THIRD_PARTY.md`](./THIRD_PARTY.md)。
 

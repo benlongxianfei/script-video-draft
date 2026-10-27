@@ -19,7 +19,7 @@ import { fileURLToPath } from "node:url";
 
 const execFileAsync = promisify(execFile);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const CLIENT = path.join(HERE, "agnes_client.mjs");
+const CLIENT = path.join(HERE, "provider.mjs");
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const exists = async (p) => { try { await access(p); return true; } catch { return false; } };
@@ -94,9 +94,9 @@ if (!args.package) {
 
 const PACKAGE = path.resolve(args.package);
 const OUT = path.resolve(args.out || "./output/storyboard-" + Date.now());
-const FRAMES = args.frames || "121";
 const SECONDS = args.seconds || "5";
 const MODEL = args.model || "";
+const PROVIDER = args.provider || process.env.PROVIDER || "";
 const IMAGE_SIZE = args["image-size"] || "2K";
 const IMAGE_RATIO = args["image-ratio"] || "16:9";
 
@@ -116,6 +116,7 @@ if (images.length !== videos.length) {
 }
 console.log(`分镜包：${images.length} 镜（生图卡 ${images.length} / 视频卡 ${videos.length}）`);
 console.log(`输出目录：${OUT}`);
+console.log(`平台：${PROVIDER || process.env.PROVIDER || "agnes"}（可用 --provider 切换）`);
 console.log(`限速计划：生图 ${IMAGE_SIZE} ${imageRpm} RPM（间隔 ${Math.round(IMAGE_INTERVAL / 1000)}s）｜视频 1 RPM（间隔 ${Math.round(INTERVAL / 1000)}s）`);
 if (DRY) console.log("（dry-run：只解析，不调用 API）");
 
@@ -154,7 +155,9 @@ for (let i = 0; i < images.length; i++) {
     }
     lastImageAt = Date.now();
     try {
-      const r = await callClient(["image", "--prompt", prompt, "--size", IMAGE_SIZE, "--ratio", IMAGE_RATIO, "--out", imgPath]);
+      const iArgs = ["image", "--prompt", prompt, "--size", IMAGE_SIZE, "--ratio", IMAGE_RATIO, "--out", imgPath];
+      if (PROVIDER) iArgs.push("--provider", PROVIDER);
+      const r = await callClient(iArgs);
       imageUrl = r.url;
       await writeFile(imgResPath, JSON.stringify(r, null, 2), "utf-8");
       console.log(`镜${shotNo} 生图完成`);
@@ -180,8 +183,9 @@ for (let i = 0; i < images.length; i++) {
   }
   const vp = buildVideoPrompt(videos[i]);
   lastVideoAt = Date.now();
-  const vArgs = ["video", "--image", imageUrl, "--prompt", vp, "--frames", FRAMES, "--seconds", SECONDS, "--out", vidPath];
+  const vArgs = ["video", "--image", imageUrl, "--prompt", vp, "--seconds", SECONDS, "--out", vidPath];
   if (MODEL) vArgs.push("--model", MODEL);
+  if (PROVIDER) vArgs.push("--provider", PROVIDER);
   try {
     const vr = await callClient(vArgs);
     await writeFile(vidResPath, JSON.stringify(vr, null, 2), "utf-8");
