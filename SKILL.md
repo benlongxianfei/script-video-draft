@@ -3,7 +3,7 @@ name: agnes-bw-video-lite
 description: "把中文口播文案做成短视频：分镜 → Agnes 生图 → 图生视频 → 豆包配音 → 剪映三轨草稿。开源精简版，只用 Agnes 中国站单站点、豆包 TTS。"
 description_zh: "文案到剪映三轨草稿的完整流水线（开源精简版：Agnes 中国站 + 豆包配音）"
 description_en: "Script to JianYing 3-track draft: Agnes (CN) images/videos + Doubao TTS"
-version: 1.1.0
+version: 1.1.1
 display_name: "Agnes 口播视频流水线（精简开源版）"
 display_name_en: "Agnes Voice-over Video Pipeline (Lite)"
 ---
