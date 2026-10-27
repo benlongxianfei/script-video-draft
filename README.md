@@ -104,20 +104,35 @@ cp -r . ~/.claude/skills/agnes-bw-video-lite     # 或 ~/.workbuddy/skills/
 | `subtitle_timeline.json` | `{"total_duration": 123.5, "segments": [{"text","file","duration"}]}` |
 | `分镜项目/00N-镜头N/` | `image.png` + `video.mp4` + `image-result.json` + `video-result.json` |
 
-### 第三方 API（China 站实测事实）
+### 第三方 API（中国站，2026-10 核实）
 
 | 项 | 值 |
 |---|---|
 | Base URL | `https://api.agnes-ai.cn`（直连，无需代理） |
-| 生图 | `POST /v1/images/generations`，模型 `agnes-image-2.1-flash`；16:9 实际输出 **1312×736** |
-| 生视频（默认） | `POST /v1/videos`，模型 `agnes-video-2.5-flash`：`seconds 4~12` + `size 720P` + `aspect_ratio 16:9` + `mode reference` + `images[]` |
-| 生视频（旧模型） | 模型 `agnes-video-v2.0`：`width/height/num_frames`，1080p 实际输出 **1920×1088**／帧数须 `8n+1`（65/121/241，265 报 400） |
+| 生图（免费） | `POST /v1/images/generations`，模型 **`agnes-image-2.5-flash`**；`size: 2K` + `ratio: 16:9` → **2624×1472** |
+| 生视频（免费） | `POST /v1/videos`，模型 **`agnes-video-2.5-flash`**：`seconds 4~12` + `size 720P` + `aspect_ratio 16:9` + `mode reference` + `images[]` |
+| 生视频（付费） | `agnes-video-2.5`（720P $0.025/s、1080P/1K $0.040/s、2K $0.055/s）→ 免费 key 会 403 `insufficient_user_quota` |
+| 生视频（旧模型） | `agnes-video-v2.0`：`width/height/num_frames`，1080p 输出 **1920×1088**／帧数须 `8n+1`（65/121/241）——**当前分组多已下架** |
 | 查询 | `GET /agnesapi?video_id=…`（2.5 系列要带 `&model_name=`），轮询 10s |
-| 限速 | 视频**有效 1 次/分钟**，必须遵守 `Retry-After`；高峰会返回 `503 video_queue_full`，等 30s 重试 |
 | 豆包 TTS | `POST https://openspeech.bytedance.com/api/v3/tts/unidirectional`，返回 base64 音频帧 |
 
-> 2026-10 实测：部分账号分组已下架 `agnes-video-v2.0`（报 `model_not_found`），所以默认走 2.5-flash（720P）。
-> 想换 1080p：`--model agnes-video-v2.0 --frames 121`，前提是你的分组支持。
+**为什么是这两个模型**：`/v1/models` 里图片最高版本是 `agnes-image-2.5-flash`（2.0/2.1/2.5 三档输出全免费），
+视频最高免费版本是 `agnes-video-2.5-flash`（2.5 标准版按秒计费，免费额度跑不动）。实测证据见 `docs/agnes-api-cn.md`。
+
+### 免费档 RPM（官网公告，2026-09-23 文本下调 50% 后）
+
+| 模态 | 规格 | 允许 | **实际生效** | 脚本对应间隔 |
+|---|---|---|---|---|
+| 图片 | 1K | 20 | **10** | 6s |
+| 图片 | **2K（默认）** | 10 | **5** | **12s** |
+| 图片 | 3K / 4K | 2 / 1 | **1 / 1** | 60s |
+| 视频 | — | 2 | **1** | **65s**（脚本默认） |
+| 文本 | — | 30 | **10** | 6s |
+
+- 限制池**按 key 类型共享**：多建几个免费 key 不会加额度
+- 图片按**档位**限速（默认 2K 只有 5 RPM），脚本已按档位自动排间隔
+- 视频 1 RPM：429 读 `Retry-After`；高峰 `503 video_queue_full` 等 30s
+- 想提额：企业认证或 Token Plan（视频 6/5 RPM + 500 秒/天配额）
 
 ## 目录结构
 
@@ -142,7 +157,11 @@ cp -r . ~/.claude/skills/agnes-bw-video-lite     # 或 ~/.workbuddy/skills/
 
 **一定要用 Agnes 吗？** 主链是 Agnes，但任何"文生图 + 图生视频"接口都能替换 —— 改 `agnes_client.mjs` 一个文件即可。
 
-**要跑多久？** 视频接口硬限速 1 次/分钟：25 镜约 85 分钟，16 镜约 55 分钟。这是物理限制，加并发只会撞 429。
+**要跑多久？** 视频免费档 1 次/分钟：25 镜约 85 分钟，16 镜约 55 分钟；生图 2K 档 5 RPM，25 张另加约 5 分钟。加并发只会撞 429。
+
+**免费能出 1080P 吗？** 不能。免费视频模型 `agnes-video-2.5-flash` 最高 720P；1080P/2K 属付费 `agnes-video-2.5`（按秒计费）。
+
+**能出更高清的画面吗？** 图片端可以先出 2K/4K 源图（免费），但成片分辨率取决于视频模型（免费档 720P）。想要 1080P 需付费模型。
 
 **支持竖屏吗？** 支持。`--width 1080 --height 1920`，字幕位置按 `--pos-y-ui` 调。
 

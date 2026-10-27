@@ -97,7 +97,13 @@ const OUT = path.resolve(args.out || "./output/storyboard-" + Date.now());
 const FRAMES = args.frames || "121";
 const SECONDS = args.seconds || "5";
 const MODEL = args.model || "";
-const IMAGE_SIZE = args["image-size"] || "1312x736";
+const IMAGE_SIZE = args["image-size"] || "2K";
+const IMAGE_RATIO = args["image-ratio"] || "16:9";
+
+// 免费档图片 RPM（官网现行值）：1K 10 / 2K 5 / 3K 1 / 4K 1
+const IMAGE_RPM = { "1K": 10, "2K": 5, "3K": 1, "4K": 1 };
+const imageRpm = IMAGE_RPM[IMAGE_SIZE.toUpperCase()] ?? 10;
+const IMAGE_INTERVAL = Number(args["image-interval"] || Math.ceil(60000 / imageRpm) + 500);
 const INTERVAL = Number(args.interval || 65000);
 const ONLY = args.only ? new Set(args.only.split(",").map((s) => Number(s.trim()))) : null;
 const DRY = args["dry-run"] === "true";
@@ -110,11 +116,13 @@ if (images.length !== videos.length) {
 }
 console.log(`分镜包：${images.length} 镜（生图卡 ${images.length} / 视频卡 ${videos.length}）`);
 console.log(`输出目录：${OUT}`);
+console.log(`限速计划：生图 ${IMAGE_SIZE} ${imageRpm} RPM（间隔 ${Math.round(IMAGE_INTERVAL / 1000)}s）｜视频 1 RPM（间隔 ${Math.round(INTERVAL / 1000)}s）`);
 if (DRY) console.log("（dry-run：只解析，不调用 API）");
 
 await mkdir(OUT, { recursive: true });
 const t0 = Date.now();
 let lastVideoAt = 0;
+let lastImageAt = 0;
 let done = 0;
 
 for (let i = 0; i < images.length; i++) {
@@ -138,7 +146,13 @@ for (let i = 0; i < images.length; i++) {
     const prompt = card.fields["正向提示词"];
     if (!prompt) { console.error(`镜${shotNo} 缺正向提示词，跳过`); continue; }
     if (DRY) { console.log(`镜${shotNo} 生图（dry）：${prompt.slice(0, 40)}…`); continue; }
-    const r = await callClient(["image", "--prompt", prompt, "--size", IMAGE_SIZE, "--out", imgPath]);
+    const imgWait = IMAGE_INTERVAL - (Date.now() - lastImageAt);
+    if (lastImageAt && imgWait > 0) {
+      console.log(`  生图限速等待 ${Math.round(imgWait / 1000)}s …`);
+      await sleep(imgWait);
+    }
+    lastImageAt = Date.now();
+    const r = await callClient(["image", "--prompt", prompt, "--size", IMAGE_SIZE, "--ratio", IMAGE_RATIO, "--out", imgPath]);
     imageUrl = r.url;
     await writeFile(imgResPath, JSON.stringify(r, null, 2), "utf-8");
     console.log(`镜${shotNo} 生图完成`);

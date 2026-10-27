@@ -4,11 +4,14 @@
 
 | 现象 | 真因 | 处理 |
 |---|---|---|
+| `403 insufficient_user_quota` | 用了付费模型（如 `agnes-video-2.5`） | 换 `agnes-video-2.5-flash` / 充值 |
+| `404 model_not_found：当前分组不支持模型` | 模型已下架（如 `agnes-video-v2.0`） | 换当前免费模型，见 `docs/agnes-api-cn.md` |
 | `429 video generation rate limit exceeded: allows 1 requests per 1 minute(s)` | 账号级视频限速 | 相邻提交 ≥65s；429 读 `Retry-After`，没有就等 70s |
 | `429 video status query rate limit exceeded` | 查询也有独立限流 | 轮询间隔 10s（别用 5s） |
 | `400 num_frames ... must be 8n+1` | 帧数不合规 | 65 / 121 / 241 |
 | `400 num_frames 265 exceeds maximum 241 for 1080p` | 1080p 帧数上限 241 | 长句用 241 帧，不要 265 |
-| 图片发糊 | 16:9 生图上限 1312×736 | 别加大请求尺寸；超分后再图生视频，或直接图生视频出 1920×1088 |
+| 图片发糊 | 用了 1K 档（16:9 只有 1312×736） | 改 `--size 2K`（免费，2624×1472）；或超分后再图生视频 |
+| 图片生成很慢 | 2K 档只有 5 RPM（3K/4K 只有 1 RPM） | 批量时按 12s/张排；赶时间用 `--size 1K`（10 RPM） |
 | `000201 Resource not found` | `api.agnes-ai.com` 是网页域名 | 用 `api.agnes-ai.cn` |
 | 下载 0 字节 | 输出域名需代理（老域名） | 新域名 `cos-platform-outputs.agnes-ai.cn` 可直连 |
 | `E2BIG` / arguments too long | 5MB data URL 当命令行参数 | 脚本内直接 fetch，不要走 CLI 参数 |

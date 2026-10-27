@@ -1,24 +1,74 @@
-# Agnes 中国站接入要点（精简版只用中国站）
+# Agnes 中国站接入要点（2026-10 核实）
 
 ## 基本信息
 
 | 项 | 值 |
 |---|---|
-| Base URL | `https://api.agnes-ai.cn`（直连稳定，不需要代理） |
+| Base URL | `https://api.agnes-ai.cn`（直连，无需代理） |
+| 国际站 | `https://apihub.agnes-ai.com/v1`（本项目不接入，仅作对照） |
 | 认证 | `Authorization: Bearer <AGNES_API_KEY_CN>` |
-| 生图模型 | `agnes-image-2.1-flash` |
-| 生视频模型 | `agnes-video-2.5-flash`（当前默认，免费，最高 720P）<br>`agnes-video-v2.0`（旧模型，出 1080p，需账号分组支持） |
+| 查模型 | `GET /v1/models`（返回当前 key 可用模型列表） |
 
-> ⚠️ **2026-10 实测**：中国站分组里 `agnes-video-v2.0` 可能不可用，直接报
-> `model_not_found：当前分组不支持模型 agnes-video-v2.0`。所以本项目**默认用 2.5-flash**，
-> 两套协议都支持（`agnes_client.mjs` 按模型名自动切换）。
+中国站 `/v1/models` 实测返回 9 个：
 
-> 本项目**不包含**国际站（`apihub.agnes-ai.com`）与双站并行调度。想加国际站请自行扩展
-> `scripts/agnes_client.mjs`：国际站必须走代理，且参数风格不同。
+```
+agnes-2.5-flash  agnes-2.5-pro  agnes-2.5-pro-alpha  agnes-2.5-pro-beta  agnes-3.0-flash
+agnes-image-2.1-flash  agnes-image-2.5-flash
+agnes-video-2.5        agnes-video-2.5-flash
+```
 
-## 两套视频协议
+国际站同批模型基本一致（多一个 `agnes-image-2.0-flash`），但本项目只走中国站。
 
-### A. 新协议（`agnes-video-2.5-flash` / 任何 2.5 系列）
+## 免费模型 vs 付费模型（关键）
+
+| 模态 | 免费（现价 $0） | 付费 | 说明 |
+|---|---|---|---|
+| 文本 | `agnes-3.0-flash`、`agnes-2.5-flash` | `agnes-2.5-pro` / `-pro-beta` | 与出片无关 |
+| 图片 | **`agnes-image-2.5-flash`** | 无（2.0 / 2.1 / 2.5 三档全部 $0） | 1K/2K/3K/4K **全档免费** |
+| 视频 | **`agnes-video-2.5-flash`** | `agnes-video-2.5`（720P $0.025/s、1080P/1K $0.040/s、2K $0.055/s） | 免费档最高 **720P** |
+
+### 两条实测证据（不是抄文档）
+
+1. `agnes-image-2.5-flash` + `size: "2K"` + `ratio: "16:9"` → 返回 **2624×1472**，2.3MB，`$0`。
+2. 免费 key 提交 `agnes-video-2.5`：
+
+   ```
+   403 {"code":"insufficient_user_quota","message":"预扣费失败，用户剩余额度: ￥0.100000，需要预扣: ￥0.750000"}
+   ```
+
+   → 付费模型用免费额度跑不动；免费只能用 `agnes-video-2.5-flash`。
+
+> 顺带：`agnes-video-v2.0` 在当前分组下已 **model_not_found**（已下架）。旧教程里的 `num_frames` 写法只对旧模型有效。
+
+## 生图：档位 + 比例
+
+`size` 用档位（`1K`/`2K`/`3K`/`4K`）时必须同时给 `ratio`：
+
+```
+POST /v1/images/generations
+{
+  "model": "agnes-image-2.5-flash",
+  "prompt": "…",
+  "size": "2K",
+  "ratio": "16:9",
+  "extra_body": { "response_format": "url" }
+}
+→ { "data": [ { "url": "https://…png" } ] }
+```
+
+| ratio | 1K | 2K | 3K | 4K |
+|---|---|---|---|---|
+| 16:9 | 1312×736 | **2624×1472** | 3936×2208 | 5248×2944 |
+| 9:16 | 736×1312 | 1472×2624 | 2208×3936 | 2944×5248 |
+| 1:1 | 1024×1024 | 2048×2048 | 3072×3072 | 4096×4096 |
+| 3:4 | 864×1152 | 1728×2304 | 2592×3456 | 3456×4608 |
+| 4:3 | 1152×864 | 2304×1728 | 3456×2592 | 4608×3456 |
+
+- 直接写像素（如 `1312x736`）也能跑，但会被归一到最近档位；建议用档位写法
+- **免费档 2K 每张都是 $0**，所以默认用 2K（源图更清楚），只受 RPM 限制
+- 出片是 720P 时，2K 源图会被缩到 720P；想更快就 `--size 1K`
+
+## 生视频：免费档协议
 
 ```
 POST /v1/videos
@@ -26,8 +76,8 @@ POST /v1/videos
   "model": "agnes-video-2.5-flash",
   "prompt": "肩膀缓慢下沉，慢推，不改变外观",
   "seconds": "5",            // 4~12 秒
-  "mode": "reference",       // 中国站单图参考帧用 reference + images
-  "size": "720P",            // 最高 720P
+  "mode": "reference",       // 单图参考帧用 reference + images
+  "size": "720P",            // 免费档最高 720P
   "aspect_ratio": "16:9",
   "n": 1,
   "images": ["https://…png"]
@@ -35,105 +85,76 @@ POST /v1/videos
 → { "video_id": "…" }
 ```
 
-查询要带模型名：`GET /agnesapi?video_id=<id>&model_name=agnes-video-2.5-flash`
-
-### B. 旧协议（`agnes-video-v2.0`，出 1080p）
+查询（2.5 系列必须带模型名）：
 
 ```
-POST /v1/videos
+GET /agnesapi?video_id=<id>&model_name=agnes-video-2.5-flash
+→ { "status": "completed", "metadata": { "url": "https://…mp4" } }
+```
+
+`mode` 三种取值：`text`（纯文生视频）、`reference`（参考图，单图起帧用这个）、`keyframe`（首尾帧）。
+
+### 旧模型 `agnes-video-v2.0`（若你的分组还支持）
+
+```
 { "model": "agnes-video-v2.0", "prompt": "…",
   "width": 1920, "height": 1080, "num_frames": 121, "frame_rate": 24,
   "image": "https://…png" }
 ```
 
-`num_frames` 必须是 **8n+1**；1080p 上限 241 帧（265 会报 400）。输出实际 **1920×1088**。
+`num_frames` 必须 **8n+1**（65≈2.7s / 121≈5s / 241≈10s，1080p 上限 241，265 报 400），
+输出实际 **1920×1088**。
 
-> 开箱默认走 A；想用 1080p 就 `--model agnes-video-v2.0 --frames 121`（前提是你的分组能用）。
+## RPM 限制（免费档，官网现行值）
 
-## 端点
+来源：Agnes 官方文档 `wiki.agnes-ai.com/en/docs/tokenplan`（Token Plan FAQ）。
+基础版本生效 2026-06-22，视频 RPM 更新 2026-06-28，**文本 RPM 于 2026-09-23 下调 50%**。
 
-### 生图
+### 免费 / default 用户
 
-```
-POST /v1/images/generations
-{
-  "model": "agnes-image-2.1-flash",
-  "prompt": "…",
-  "size": "1312x736",
-  "extra_body": { "response_format": "url" }
-}
-→ { "data": [ { "url": "https://…png" } ] }
-```
+| 模态 | 规格 | 允许 RPM | **实际生效 RPM** | 对应间隔 |
+|---|---|---|---|---|
+| 文本 | — | 30 | **10** | 6s |
+| 图片 | 1K | 20 | **10** | 6s |
+| 图片 | 2K | 10 | **5** | 12s |
+| 图片 | 3K | 2 | **1** | 60s |
+| 图片 | 4K | 1 | **1** | 60s |
+| 视频 | — | 2 | **1** | ≥60s（脚本用 65s） |
 
-### 图生视频
+### 对照：企业认证 / Token Plan
 
-```
-POST /v1/videos
-{
-  "model": "agnes-video-v2.0",
-  "prompt": "手指缓慢收紧，慢推，不改变外观",
-  "width": 1920, "height": 1080,
-  "num_frames": 121, "frame_rate": 24,
-  "image": "https://…png"
-}
-→ { "video_id": "…", "status": "queued" }
-```
+| 模态 | 规格 | 企业（允许/实际） | Token Plan（允许/实际） |
+|---|---|---|---|
+| 文本 | — | 60 / 20 | 1000 / 1000 |
+| 图片 | 1K | 60 / 40 | 120 / 100 |
+| 图片 | 2K | 40 / 20 | 120 / 80 |
+| 图片 | 3K / 4K | 2 / 1、2 / 1 | 2 / 1、2 / 1 |
+| 视频 | — | 2 / 2 | 6 / 5 |
 
-`image` 支持公网 http(s) URL，也接受 `data:image/png;base64,…`（本地图直传，不用图床）。
-注意 Windows 命令行参数上限约 32KB，5MB 的 data URL 不能当命令行参数传，必须在脚本内直接请求。
+Token Plan 除 RPM 外还有配额：`agnes-3.0-flash` 按请求数（Starter 1500 次/5 小时），
+**图片 4000 张/天、视频 500 秒/天**（三档相同）。
 
-### 查询
+### 落地规则
 
-```
-GET /agnesapi?video_id=<id>
-→ { "status": "completed|failed|processing", "metadata": { "url": "https://…mp4" } }
-```
+- **限制池按 key 类型共享，不按单个 key**：多建几个免费 key 不会提高额度
+- 图片按**档位**分级限速：2K 只有 5 RPM，批量时按 12s 一张排
+- 视频免费 1 RPM：相邻两次提交 ≥65s，429 读 `Retry-After`，没有就等 70s
+- 状态查询也有独立限流（`video status query limit exceeded`）→ 轮询 10s
+- 高峰会返回 `503 video_queue_full`（服务端队列满，不是限速）→ 等 30s 重试
+- 官方写明数值"可能调整"，所以本项目把 RPM 放进 `config.example.json`
 
-完成后**视频地址在顶层 `url` / `metadata.url`**，不在 `data.url`。轮询间隔建议 10s。
+## 报错对照
 
-## 分辨率实测（这就是为什么别乱填尺寸）
-
-| 请求 | 实际输出 | 说明 |
+| 返回 | 含义 | 处理 |
 |---|---|---|
-| 生图 1920×1080 | **1312×736** | 16:9 模型上限，请求更大也只会给这个 |
-| 生图 1024×1024 | 1024×1024 | 方图不压缩 |
-| 生图 768×1344 | 736×1312 | 竖屏按档位对齐 |
-| 视频 1920×1080 | **1920×1088** | 基于 1312×736 的图也能放大成真 1080p |
-
-**正确姿势**：生图 1312×736 → 图生视频 1920×1080 → 输出 1920×1088，成片即 1080p。
-
-## 帧数规则（只对旧模型 v2.0 有意义）
-
-`num_frames` 必须是 **8n+1**，否则 400：
-
-| 帧数 | 时长（24fps） | 用途 |
-|---|---|---|
-| 65 | ≈2.7s | 短句 |
-| 121 | ≈5s | **默认** |
-| 241 | ≈10s | 长句（1080p 上限） |
-
-1080p/16:9 传 265 会报 `num_frames 265 exceeds maximum 241`。
-
-2.5 系列没有帧数概念，用 `seconds`（4~12）控制时长。
-
-## 限速（硬约束，不能靠并发绕过）
-
-| 资源 | 限制 |
-|---|---|
-| 视频生成 | default 账号**有效 1 次/分钟**（`allows 1 requests per 1 minute(s)`） |
-| 视频状态查询 | 也有独立限流（`video status query rate limit exceeded`）→ 轮询 10s |
-| 生图 | 1K/2K 档约 20/10 RPM，可连续跑 |
-| 视频队列 | 高峰会返回 `503 video_queue_full`（不是限速，是服务端排队满）→ 等 30s 重试 |
-
-正确做法：
-
-- 相邻两次**视频提交**间隔 ≥65s（`batch_generate.mjs` 的 `--interval`）
-- 429 时读 `Retry-After`，没有就等 70s 再试
-- 503 `video_queue_full` 时等 30s 重试（客户端已内置 12 轮）
-- 多篇文案的视频任务**串行排队**，不要并行
+| `429 allows N requests per 1 minute(s)` | 触发 RPM | 等 `Retry-After` 或 60~70s |
+| `403 insufficient_user_quota` | 用了付费模型但余额不足 | 换 `*-flash` 免费模型 |
+| `404 model_not_found：当前分组不支持模型 X` | 模型已下架 | 换当前免费模型 |
+| `503 video_queue_full` | 视频队列满 | 等 30s 重试 |
+| `400 num_frames ... exceeds maximum 241` | 旧模型帧数超限 | 用 65/121/241 |
 
 ## 网络
 
-- 中国站偶发 `fetch failed`，必须重试（本项目默认 6 次 × 4s）
+- 中国站直连稳定；偶发 `fetch failed`，重试 6 次 × 4s
 - 输出下载域名 `cos-platform-outputs.agnes-ai.cn` 可直连
 - `api.agnes-ai.com` 是**网页域名**，不是 API 地址（POST 会返回 `000201 Resource not found`）

@@ -44,14 +44,27 @@ display_name_en: "Agnes Voice-over Video Pipeline (Lite)"
 ```
 文案(txt/md)
   → ①分镜：40 字 ≈ 1 镜，产出分镜包 md（## G 生图卡 / ## H 图生视频卡）
-  → ②生图：agnes_client.mjs image，16:9 实际输出 1312x736（模型上限）
-  → ③图生视频：agnes_client.mjs video，默认 agnes-video-2.5-flash（seconds 5 / 720P）
-              账号支持旧模型时可 --model agnes-video-v2.0 --frames 121 出 1920x1088
+  → ②生图：agnes_client.mjs image，模型 agnes-image-2.5-flash，默认 2K+16:9 → 2624x1472
+  → ③图生视频：agnes_client.mjs video，模型 agnes-video-2.5-flash（seconds 5 / 720P）
+              账号支持旧模型时才用 --model agnes-video-v2.0 --frames 121 出 1920x1088
   → ④配音：tts_doubao.py 逐句合成 → 去静音 + 60ms 尾停 → 拼合 → subtitle_timeline.json
   → ⑤草稿：build_draft.py 规划均衡段落 → 三轨独立片段 → 写回字间距/位置 → 四道校验
 ```
 
-一键跑：`node scripts/batch_generate.mjs --package 分镜包.md --out ./output/项目名`（视频限速 1 次/分钟，25 镜约 85 分钟，必须后台跑）
+一键跑：`node scripts/batch_generate.mjs --package 分镜包.md --out ./output/项目名`
+（图片按档位限速、视频 1 次/分钟，25 镜约 90 分钟，必须后台跑）
+
+## 免费额度与限速（2026-10 官网口径）
+
+| 模态 | 免费模型 | 免费档最高规格 | 实际生效 RPM |
+|---|---|---|---|
+| 图片 | `agnes-image-2.5-flash` | 4K（1K/2K/3K/4K 全免费） | 1K **10** / 2K **5** / 3K **1** / 4K **1** |
+| 视频 | `agnes-video-2.5-flash` | **720P** | **1**（允许 2） |
+| 文本 | `agnes-3.0-flash` | — | **10**（2026-09-23 下调 50%） |
+
+- 付费 `agnes-video-2.5` 可按秒出 720P/1080P/2K；免费 key 调用会 `403 insufficient_user_quota`
+- 限制池按 key **类型**共享，多建 key 不提额
+- 默认用 2K 生图（免费且更清楚）；赶时间改 `--size 1K`（10 RPM）
 
 ## 分镜包格式（机器可解析，硬约束）
 
@@ -101,7 +114,9 @@ display_name_en: "Agnes Voice-over Video Pipeline (Lite)"
 | `503 video_queue_full` | 服务端视频队列满（不是限速） | 等 30s 重试（客户端已内置轮询） |
 | `model_not_found：当前分组不支持模型 agnes-video-v2.0` | 账号分组已下架旧模型 | 改用默认 `agnes-video-2.5-flash`（720P） |
 | `400 num_frames ... exceeds maximum` | 帧数超限（旧模型） | 1080p 上限 241 帧，用 65/121/241 |
-| 图片"糊" | 16:9 生图上限 1312×736 | 别加大请求尺寸；超分后再图生视频 |
+| `403 insufficient_user_quota` | 调了付费模型 `agnes-video-2.5` | 换 `agnes-video-2.5-flash` |
+| 图片"糊" | 用了 1K 档（1312×736） | 改 `--size 2K`（免费，2624×1472） |
+| 生图排队久 | 2K 档只有 5 RPM | 按 12s/张排；赶时间用 `--size 1K` |
 | 全篇错位十几秒 | 时间轴二次缩放 / clip 缓存复用 | 从原始时间轴算一次系数；clip 文件名带素材指纹 |
 | 画面重复 | 段→素材按比例映射 | 显式映射 + 唯一性断言 |
 | 豆包报 `resource ID is mismatched` | 音色与资源不匹配 | 克隆音色配 `seed-icl-2.0`，预置音色配 `seed-tts-2.0` |

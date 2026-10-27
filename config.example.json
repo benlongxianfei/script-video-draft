@@ -3,17 +3,25 @@
 
   "agnes": {
     "baseUrl": "https://api.agnes-ai.cn",
-    "imageModel": "agnes-image-2.1-flash",
-    "imageSize": "1312x736",
+    "imageModel": "agnes-image-2.5-flash",
+    "imageSize": "2K",
+    "imageRatio": "16:9",
     "videoModel": "agnes-video-2.5-flash",
     "videoSeconds": "5",
     "videoSize": "720P",
     "aspectRatio": "16:9",
     "legacyVideoModel": "agnes-video-v2.0",
+    "paidVideoModel": "agnes-video-2.5",
     "frames": 121,
     "width": 1920,
     "height": 1080,
     "fps": 24,
+    "rpm": {
+      "_说明": "免费档实际生效 RPM（官网 Token Plan FAQ）",
+      "image": { "1K": 10, "2K": 5, "3K": 1, "4K": 1 },
+      "video": 1,
+      "text": 10
+    },
     "videoIntervalMs": 65000,
     "pollIntervalSec": 10,
     "timeoutSec": 900,

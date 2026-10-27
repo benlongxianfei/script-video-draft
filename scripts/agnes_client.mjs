@@ -3,18 +3,26 @@
  * Agnes 中国站最小客户端（零依赖，Node 18+ 内置 fetch）
  *
  * 子命令：
- *   image   --prompt "..." [--size 1312x736] [--out 路径.png] [--model ...]
- *   video   --image <图片URL或本地路径> --prompt "..." [--frames 121] [--width 1920 --height 1080] [--out 路径.mp4]
+ *   image   --prompt "..." [--size 2K|1K|3K|4K|1312x736] [--ratio 16:9] [--out 路径.png] [--model ...]
+ *   video   --image <图片URL或本地路径> --prompt "..." [--seconds 5] [--video-size 720P] [--out 路径.mp4]
  *   query   --video-id <id>
  *
  * 认证：环境变量 AGNES_API_KEY_CN（或 AGNES_API_KEY）
  * 站点：AGNES_BASE_URL，默认 https://api.agnes-ai.cn（中国站，直连）
  *
- * 关键事实（实测）：
- *   - 帧数 num_frames 必须是 8n+1：65≈2.7s / 121≈5s / 241≈10s（1080p 上限 241，传 265 报 400）
- *   - 视频有效限速 1 次/分钟；429 必须遵守 Retry-After
- *   - 生图 16:9 请求 1920x1080 实际只返回 1312x736（模型上限）
- *   - 视频 1920x1080 实际输出 1920x1088
+ * 当前免费模型（2026-10 核实，官网 pricing + /v1/models 双向确认）：
+ *   生图  agnes-image-2.5-flash   —— 1K/2K/3K/4K 全部 $0
+ *   生视频 agnes-video-2.5-flash  —— 720P，限时免费
+ *   付费  agnes-video-2.5（720P $0.025/s、1080P $0.040/s、2K $0.055/s）免费 key 会 403 insufficient_user_quota
+ *
+ * 免费档 RPM（官网 Token Plan FAQ，实际生效值）：
+ *   图片 1K 10 / 2K 5 / 3K 1 / 4K 1 ｜ 视频 1（允许 2，实际 1）
+ *
+ * 其它实测事实：
+ *   - 生图档位写法 size=2K + ratio=16:9 → 2624x1472（1K 16:9 → 1312x736）
+ *   - 视频 2.5 系列用 seconds(4~12) + size + aspect_ratio + mode=reference + images[]
+ *   - 旧模型 agnes-video-v2.0 用 width/height/num_frames（8n+1），1080p 上限 241 帧
+ *   - 高峰可能 503 video_queue_full（服务端排队满），等 30s 重试
  */
 import { writeFile, mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
@@ -23,11 +31,12 @@ const BASE = (process.env.AGNES_BASE_URL || "https://api.agnes-ai.cn").replace(/
 const KEY = (process.env.AGNES_API_KEY_CN || process.env.AGNES_API_KEY || "").trim();
 
 const DEFAULTS = {
-  imageModel: "agnes-image-2.1-flash",
-  // 中国站当前可用：agnes-video-2.5-flash（免费，最高 720P，参数 seconds/size/aspect_ratio）
-  // 若你的分组支持旧模型 agnes-video-v2.0，用 --model agnes-video-v2.0 可出 1080p（帧数须 8n+1）
+  // 免费档最高版本（2026-10 核实：agnes-image-2.5-flash / agnes-video-2.5-flash 为当前免费模型）
+  imageModel: "agnes-image-2.5-flash",
+  imageSize: "2K",          // 免费档位：1K / 2K / 3K / 4K，全部 $0；2K 16:9 = 2624x1472
+  imageRatio: "16:9",
+  // 中国站免费视频模型；付费的 agnes-video-2.5 需要账户余额（免费 key 会 403 insufficient_user_quota）
   videoModel: "agnes-video-2.5-flash",
-  imageSize: "1312x736",
   frames: 121,
   seconds: "5",
   videoSize: "720P",
@@ -89,6 +98,11 @@ async function api(pathname, init = {}, tries = DEFAULTS.retries) {
       }
       if (!res.ok) {
         const t = await res.text();
+        if (/insufficient_user_quota|预扣费失败/.test(t)) {
+          throw new Error(
+            `该模型属付费模型，账户余额不足（免费额度不覆盖）。免费请改用 *-flash 模型（agnes-image-2.5-flash / agnes-video-2.5-flash）。原始返回：${t.slice(0, 200)}`,
+          );
+        }
         throw new Error(`HTTP ${res.status}: ${t.slice(0, 300)}`);
       }
       return await res.json();
@@ -128,16 +142,19 @@ async function download(url, outPath) {
 async function cmdImage(args) {
   const prompt = args.prompt;
   if (!prompt) throw new Error("缺少 --prompt");
+  const size = args.size || DEFAULTS.imageSize;
   const body = {
     model: args.model || DEFAULTS.imageModel,
     prompt,
-    size: args.size || DEFAULTS.imageSize,
+    size,
     extra_body: { response_format: "url" },
   };
+  // 档位写法（1K/2K/3K/4K）必须配 ratio；具体像素写法（如 1312x736）不需要
+  if (/^\d+K$/i.test(size)) body.ratio = args.ratio || DEFAULTS.imageRatio;
   const data = await api("/v1/images/generations", { method: "POST", body: JSON.stringify(body) });
   const url = data?.data?.[0]?.url;
   if (!url) throw new Error("返回里没有图片 URL");
-  const result = { ok: true, type: "image", url };
+  const result = { ok: true, type: "image", model: body.model, size, url };
   if (args.out) result.local_file = await download(url, args.out);
   log(JSON.stringify(result, null, 2));
   return result;

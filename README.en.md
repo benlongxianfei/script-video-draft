@@ -56,12 +56,17 @@ Then just say: *"turn this script into a video with a JianYing draft"*.
 | Item | Value |
 |---|---|
 | Base URL | `https://api.agnes-ai.cn` (direct, no proxy) |
-| Image | `POST /v1/images/generations`, `agnes-image-2.1-flash`; 16:9 returns **1312×736** max |
-| Video (default) | `POST /v1/videos`, `agnes-video-2.5-flash`: `seconds 4–12`, `size 720P`, `mode reference` |
-| Video (legacy) | `agnes-video-v2.0`: `num_frames` must be `8n+1`; 1080p outputs **1920×1088**, max 241 frames |
-| Poll | `GET /agnesapi?video_id=…` (+`&model_name=` for 2.5), every 10s |
-| Rate limit | **1 effective video request per minute**; obey `Retry-After`; `503 video_queue_full` → retry after 30s |
+| Image (free) | `POST /v1/images/generations`, **`agnes-image-2.5-flash`**; `size: 2K` + `ratio: 16:9` → **2624×1472** |
+| Video (free) | `POST /v1/videos`, **`agnes-video-2.5-flash`**: `seconds 4–12`, `size 720P`, `mode reference`, `images[]` |
+| Video (paid) | `agnes-video-2.5` (720P $0.025/s, 1080P $0.040/s) — free keys get `403 insufficient_user_quota` |
+| Video (legacy) | `agnes-video-v2.0`: `num_frames` must be `8n+1`, 1080p → 1920×1088 — mostly delisted now |
+| Poll | `GET /agnesapi?video_id=…` (+`&model_name=` for 2.5) every 10s |
 | Doubao TTS | `POST https://openspeech.bytedance.com/api/v3/tts/unidirectional` |
+
+**Free-tier RPM** (official Token Plan FAQ; text cut by 50% on 2026-09-23):
+image 1K **10**, 2K **5**, 3K **1**, 4K **1**; video **1** (allowed 2); text **10**.
+Limit pools are shared per key *type* — creating more free keys does not raise them.
+`503 video_queue_full` means the server queue is full (not a rate limit) → retry after 30s.
 
 ## Structure
 
