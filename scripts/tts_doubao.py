@@ -35,7 +35,8 @@ from pathlib import Path
 from urllib.request import Request, urlopen
 
 ENDPOINT = "https://openspeech.bytedance.com/api/v3/tts/unidirectional"
-APP_KEY = "aGjiRDfUWi"  # 火山引擎固定 app key（官方示例值）
+# 火山引擎文档示例里公开的 app key；如你的账号要求自有 app key，用 DOUBAO_APP_KEY 覆盖
+APP_KEY = os.environ.get("DOUBAO_APP_KEY", "aGjiRDfUWi").strip()
 MAX_CHARS_PER_CALL = 500
 TAIL_PAD = 0.06  # 句尾补 60ms
 

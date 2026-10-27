@@ -73,7 +73,10 @@ function log(...a) {
 
 async function api(pathname, init = {}, tries = DEFAULTS.retries) {
   let last;
-  let queueFullLeft = 12; // 视频队列满（503 video_queue_full）时多等几轮
+  // 视频队列满（503 video_queue_full）时按退避重试：前 10 轮 30s，之后 60s
+  // 默认预算 20 轮 ≈ 12 分钟（实测队列饱和可持续 12 分钟以上）；可用 AGNES_QUEUE_RETRY 调整
+  let queueFullLeft = Number(process.env.AGNES_QUEUE_RETRY || 20);
+  const queueStart = Date.now();
   for (let i = 1; i <= tries; i++) {
     try {
       const res = await fetch(`${BASE}${pathname}`, {
@@ -88,9 +91,11 @@ async function api(pathname, init = {}, tries = DEFAULTS.retries) {
       }
       if (res.status === 503) {
         const t = await res.text();
-        if (/queue_full|队列已满/i.test(t) && queueFullLeft-- > 0) {
-          log(`  视频队列已满（503），等 30s 再试（剩 ${queueFullLeft} 次）`);
-          await sleep(30000);
+        if (/queue_full|队列已满|queue is full/i.test(t) && queueFullLeft-- > 0) {
+          const waited = Math.round((Date.now() - queueStart) / 1000);
+          const nap = waited < 300 ? 30 : 60;
+          log(`  视频队列已满（503，未入队、不扣额度），等 ${nap}s 重试（剩 ${queueFullLeft} 轮，已等 ${waited}s）`);
+          await sleep(nap * 1000);
           i--; // 不占用普通重试次数
           continue;
         }

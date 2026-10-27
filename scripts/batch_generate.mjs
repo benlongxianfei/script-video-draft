@@ -124,6 +124,7 @@ const t0 = Date.now();
 let lastVideoAt = 0;
 let lastImageAt = 0;
 let done = 0;
+const failures = [];
 
 for (let i = 0; i < images.length; i++) {
   const card = images[i];
@@ -152,10 +153,16 @@ for (let i = 0; i < images.length; i++) {
       await sleep(imgWait);
     }
     lastImageAt = Date.now();
-    const r = await callClient(["image", "--prompt", prompt, "--size", IMAGE_SIZE, "--ratio", IMAGE_RATIO, "--out", imgPath]);
-    imageUrl = r.url;
-    await writeFile(imgResPath, JSON.stringify(r, null, 2), "utf-8");
-    console.log(`镜${shotNo} 生图完成`);
+    try {
+      const r = await callClient(["image", "--prompt", prompt, "--size", IMAGE_SIZE, "--ratio", IMAGE_RATIO, "--out", imgPath]);
+      imageUrl = r.url;
+      await writeFile(imgResPath, JSON.stringify(r, null, 2), "utf-8");
+      console.log(`镜${shotNo} 生图完成`);
+    } catch (e) {
+      failures.push(`镜${shotNo} 生图失败：${String(e.message || e).slice(0, 120)}`);
+      console.error(`镜${shotNo} 生图失败，跳过继续`);
+      continue;
+    }
   }
 
   // ---- 图生视频 ----
@@ -175,11 +182,17 @@ for (let i = 0; i < images.length; i++) {
   lastVideoAt = Date.now();
   const vArgs = ["video", "--image", imageUrl, "--prompt", vp, "--frames", FRAMES, "--seconds", SECONDS, "--out", vidPath];
   if (MODEL) vArgs.push("--model", MODEL);
-  const vr = await callClient(vArgs);
-  await writeFile(vidResPath, JSON.stringify(vr, null, 2), "utf-8");
-  done++;
-  const mins = ((Date.now() - t0) / 60000).toFixed(1);
-  console.log(`镜${shotNo} 视频完成（${done} 镜 / 已用 ${mins} 分钟）`);
+  try {
+    const vr = await callClient(vArgs);
+    await writeFile(vidResPath, JSON.stringify(vr, null, 2), "utf-8");
+    done++;
+    const mins = ((Date.now() - t0) / 60000).toFixed(1);
+    console.log(`镜${shotNo} 视频完成（${done} 镜 / 已用 ${mins} 分钟）`);
+  } catch (e) {
+    // 队列满等临时故障：记下来继续下一镜，重跑即可续传
+    failures.push(`镜${shotNo} 视频失败：${String(e.message || e).slice(0, 120)}`);
+    console.error(`镜${shotNo} 视频失败，跳过继续（重跑本脚本会续传）`);
+  }
 }
 
 // ---- 汇总（以磁盘为准）----
@@ -202,3 +215,8 @@ await writeFile(path.join(OUT, "storyboard-package-results.json"), JSON.stringif
 const missing = results.filter((r) => !r.video).map((r) => r.shot);
 console.log(`\n完成：${results.filter((r) => r.video).length}/${images.length} 镜`);
 if (missing.length) console.log(`未完成镜头：${missing.join(", ")}（重跑本脚本会自动续传）`);
+if (failures.length) {
+  console.log(`\n本轮失败 ${failures.length} 项：`);
+  for (const f of failures) console.log("  - " + f);
+  console.log("提示：503 video_queue_full 是免费档共享队列饱和（未入队、不扣额度），错峰重跑即可。");
+}
