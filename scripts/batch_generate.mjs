@@ -16,6 +16,9 @@ import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import { loadDotenv } from "./_envload.mjs";
+
+loadDotenv(); // 读取仓库根目录 .env（存在才加载；不覆盖已 export 的变量）
 
 const execFileAsync = promisify(execFile);
 const HERE = path.dirname(fileURLToPath(import.meta.url));

@@ -57,6 +57,9 @@ cp .env.example .env        # 填画面平台 key（默认 Agnes）+ 火山引�
 cp config.example.json config.json   # 填剪映草稿目录、provider 等
 ```
 
+脚本启动时会**自动读取仓库根目录的 `.env`**，填完直接跑即可，不用手动 `export`。
+shell 里已 `export` 的同名变量优先，不会被 `.env` 覆盖 —— 想临时换 key 直接 `FOO=xx node ...`。
+
 | 变量 | 用途 | 从哪拿 |
 |---|---|---|
 | `PROVIDER`（可选） | 选平台，默认 `agnes` | 见 `docs/providers.md` |
