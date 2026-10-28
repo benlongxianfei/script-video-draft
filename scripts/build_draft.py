@@ -181,12 +181,24 @@ def main() -> None:
         dur_us = int(round(float(s["duration"]) * 1e6))
         src = s.get("file")
         if src and Path(src).exists():
-            seg = jy.AudioSegment(src, jy.trange(start_us, dur_us), volume=1.0)
+            # 时间轴里的 duration 来自 TTS 侧的 ffprobe，可能比 pyJianYingDraft
+            # 读到的素材时长长出几百微秒（两者对 wav data chunk 的算法不同）。
+            # 直接传入会让 source_timerange 越界，触发库内断言：
+            #   ValueError: 截取的素材时间范围 [0, N] 超出了素材时长(M)
+            # 这里以库自己读到的时长为准取 min —— 既不越界，也不截断音频。
+            material = jy.AudioMaterial(str(src))
+            if dur_us > material.duration + 50_000:  # 差超过 50ms 说明素材可能残缺
+                print(f"  ⚠ 句 {audio_count + 1}：时间轴 {dur_us/1e6:.3f}s 比素材 "
+                      f"{material.duration/1e6:.3f}s 长，已按素材时长截断")
+            play_us = min(dur_us, material.duration)
+            seg = jy.AudioSegment(material, jy.trange(start_us, play_us), volume=1.0)
             script.add_segment(seg, "音频_逐句")
             audio_count += 1
         t += float(s["duration"])
     if audio_count == 0:  # 时间轴里没有逐句文件时，退回整段音频
-        script.add_segment(jy.AudioSegment(str(audio_full), jy.trange(0, int(total * 1e6))), "音频_逐句")
+        material = jy.AudioMaterial(str(audio_full))
+        play_us = min(int(total * 1e6), material.duration)  # 同上，防越界
+        script.add_segment(jy.AudioSegment(material, jy.trange(0, play_us)), "音频_逐句")
         audio_count = 1
     print(f"音频轨 {audio_count} 段")
 
