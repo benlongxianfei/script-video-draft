@@ -162,7 +162,7 @@ cp -r . ~/.claude/skills/script-video-draft     # 或 ~/.workbuddy/skills/
 │   ├── tts-doubao.md         豆包配音与停顿处理
 │   ├── jianying-draft.md     剪映三轨字段与换算
 │   ├── quality-check.md      防变形与抽帧验收
-│   ├── style-packs.md        三套画风提示词骨架
+│   ├── style-packs.md        四套画风提示词骨架
 │   └── pitfalls.md           踩坑速查
 ├── examples/                 示例文案与分镜包
 ├── THIRD_PARTY.md            第三方依赖 / 服务 / 商标说明
