@@ -152,10 +152,13 @@ def main() -> None:
 
     # ---------- 视频轨 ----------
     script.add_track(jy.TrackType.video, "视频_逐段")
-    cursor = 0.0
+    # 时间轴一律用「整数微秒」累加：浮点秒累加会在相邻片段边界留下 ±1μs 误差，
+    # pyJianYingDraft 按整数微秒判重叠，差 1μs 就抛 SegmentOverlap。
+    cursor_us = 0
     short_warn = []
     for i, g in enumerate(groups):
         gdur = sum(float(x["duration"]) for x in g)
+        gdur_us = int(round(gdur * 1e6))
         video = videos[i] if i < len(videos) else videos[-1]
         phys = probe_duration(video)
         speed = 1.0
@@ -167,17 +170,16 @@ def main() -> None:
             if ratio < 0.4:
                 short_warn.append((i + 1, round(phys, 2), round(gdur, 2), video.name))
                 speed = max(0.05, ratio)  # 素材实在太短，只能更慢，但绝不循环/定格
-        seg = jy.VideoSegment(str(video), jy.trange(int(cursor * 1e6), int(gdur * 1e6)), speed=speed)
+        seg = jy.VideoSegment(str(video), jy.trange(cursor_us, gdur_us), speed=speed)
         script.add_segment(seg, "视频_逐段")
-        cursor += gdur
-    print(f"视频轨 {len(groups)} 段，末点 {cursor:.2f}s")
+        cursor_us += gdur_us
+    print(f"视频轨 {len(groups)} 段，末点 {cursor_us / 1e6:.2f}s")
 
     # ---------- 音频轨（逐句独立片段） ----------
     script.add_track(jy.TrackType.audio, "音频_逐句")
     audio_count = 0
-    t = 0.0
+    t_us = 0
     for s in segs:
-        start_us = int(t * 1e6)
         dur_us = int(round(float(s["duration"]) * 1e6))
         src = s.get("file")
         if src and Path(src).exists():
@@ -191,10 +193,10 @@ def main() -> None:
                 print(f"  ⚠ 句 {audio_count + 1}：时间轴 {dur_us/1e6:.3f}s 比素材 "
                       f"{material.duration/1e6:.3f}s 长，已按素材时长截断")
             play_us = min(dur_us, material.duration)
-            seg = jy.AudioSegment(material, jy.trange(start_us, play_us), volume=1.0)
+            seg = jy.AudioSegment(material, jy.trange(t_us, play_us), volume=1.0)
             script.add_segment(seg, "音频_逐句")
             audio_count += 1
-        t += float(s["duration"])
+        t_us += dur_us
     if audio_count == 0:  # 时间轴里没有逐句文件时，退回整段音频
         material = jy.AudioMaterial(str(audio_full))
         play_us = min(int(total * 1e6), material.duration)  # 同上，防越界
@@ -209,23 +211,24 @@ def main() -> None:
     b = int(args.color[4:6], 16) / 255
     transform_y = args.pos_y_ui / args.height
     sub_count = 0
-    cursor = 0.0
+    cursor_us = 0
     for s in segs:
-        dur = float(s["duration"])
+        dur_us = int(round(float(s["duration"]) * 1e6))
         text = (s.get("text") or "").strip()
         if text:
             parts = split_phrase(text)
             weights = [max(len(p), 1) for p in parts]
-            alloc = [int(round(dur * 1e6 * w / sum(weights))) for w in weights]
-            alloc[-1] += int(round(dur * 1e6)) - sum(alloc)
-            tt = cursor
+            alloc = [int(round(dur_us * w / sum(weights))) for w in weights]
+            alloc[-1] += dur_us - sum(alloc)
+            alloc = [max(a, 1) for a in alloc]  # 极端情况下防 0/负长度片段
+            tt_us = cursor_us
             for p, du in zip(parts, alloc):
                 if len(p) <= 1 and len(parts) > 1:  # 单字条目 = 拆词事故，跳过
-                    tt += du / 1e6
+                    tt_us += du
                     continue
                 seg = jy.TextSegment(
                     p,
-                    jy.trange(int(tt * 1e6), du),
+                    jy.trange(tt_us, du),
                     style=jy.TextStyle(size=args.font_size, bold=False, color=(r, g_, b),
                                        align=1, auto_wrapping=False, max_line_width=0.92),
                     border=jy.TextBorder(width=args.stroke_width, color=(0.0, 0.0, 0.0)),
@@ -233,8 +236,8 @@ def main() -> None:
                 )
                 script.add_segment(seg, "字幕_逐句")
                 sub_count += 1
-                tt += du / 1e6
-        cursor += dur
+                tt_us += du
+        cursor_us += dur_us
     print(f"字幕轨 {sub_count} 条")
 
     script.save()
@@ -263,7 +266,7 @@ def main() -> None:
     ok1 = abs(sum_sent - total) < 0.1
     print(f"1) Σ句 {sum_sent:.3f}s ≈ 总时长 {total:.3f}s：{'通过' if ok1 else '不通过'}")
 
-    vid_end = cursor
+    vid_end = cursor_us / 1e6
     ok2 = abs(vid_end - total) < 0.1
     print(f"2) 视频轨末点 {vid_end:.3f}s ≈ 音频 {total:.3f}s：{'通过' if ok2 else '不通过'}")
 
