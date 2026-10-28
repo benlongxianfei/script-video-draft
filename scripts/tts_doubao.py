@@ -34,6 +34,10 @@ import uuid
 from pathlib import Path
 from urllib.request import Request, urlopen
 
+from _envload import load_dotenv
+
+load_dotenv()  # 读取仓库根目录 .env（存在才加载；不覆盖已 export 的变量）
+
 ENDPOINT = "https://openspeech.bytedance.com/api/v3/tts/unidirectional"
 # 火山引擎文档示例里公开的 app key；如你的账号要求自有 app key，用 DOUBAO_APP_KEY 覆盖
 APP_KEY = os.environ.get("DOUBAO_APP_KEY", "aGjiRDfUWi").strip()

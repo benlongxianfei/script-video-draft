@@ -15,6 +15,9 @@
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { loadDotenv } from "./_envload.mjs";
+
+loadDotenv(); // 读取仓库根目录 .env（存在才加载；不覆盖已 export 的变量）
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PROVIDER_DIR = path.join(HERE, "providers");
